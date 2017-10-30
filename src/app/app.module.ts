@@ -1,7 +1,10 @@
+import { FIREBASE_CREDENTIALS } from './firebase.credential';
 import { NgModule, ErrorHandler } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { IonicApp, IonicModule, IonicErrorHandler } from 'ionic-angular';
 import { MyApp } from './app.component';
+import { AngularFireDatabaseModule } from 'angularfire2/database';
+import { AngularFireModule } from "angularfire2";
 
 import { AboutPage } from '../pages/about/about';
 import { ContactPage } from '../pages/contact/contact';
@@ -22,7 +25,10 @@ import { GoogleMaps } from '@ionic-native/google-maps';
   ],
   imports: [
     BrowserModule,
-    IonicModule.forRoot(MyApp)
+    IonicModule.forRoot(MyApp),
+    AngularFireDatabaseModule,
+    AngularFireModule.initializeApp(FIREBASE_CREDENTIALS)
+    
   ],
   bootstrap: [IonicApp],
   entryComponents: [
