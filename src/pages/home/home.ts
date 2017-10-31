@@ -7,10 +7,11 @@ import {
   MarkerOptions,
   Marker
 } from '@ionic-native/google-maps';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { NavController, Platform } from 'ionic-angular';
 import { AngularFireDatabase, AngularFireList } from 'angularfire2/database';
 import * as GeoFire from "geofire";
+import {BehaviorSubject} from 'rxjs/BehaviorSubject';
 
 @Component({
   selector: 'page-home',
@@ -26,10 +27,11 @@ export class HomePage {
   //   }
   // ];
 
-  hits: any[] = [];
+  hits = new BehaviorSubject([]);
   dbRef: any;
   geoFire: any;
-  center = [40.93011520598305,-74.17144775390625]
+  center = [40.93011520598305,-74.17144775390625];
+  markers: any[] = [];
   // dbRef: AngularFireList<{}>;
 
   map: GoogleMap;
@@ -41,15 +43,22 @@ export class HomePage {
     
     this.dbRef = this.db.database.ref('/location');
     this.geoFire = new GeoFire(this.dbRef);
-    // this.setLocation("PHp5Elm15nhAG44f61XcTx4JQ4z2", [40.68896903762435,-73.64959716796875]);
+    
     
 
     platform.ready().then(
       ()=>{
-        this.getLocation(200, [40.93011520598305,-74.17144775390625]);
-        // this.loadMap();
+        this.loadMap();
+        setTimeout(()=>{
+          this.getLocation(1500, [40.93011520598305,-74.17144775390625]);
+        }, 3000)
+        
       }
     );
+   }
+
+   ngOnInit(){
+    this.hits.subscribe(hits => this.markers = hits)
    }
 
   setLocation(key: string, coords: Array<number>){
@@ -67,15 +76,31 @@ export class HomePage {
         distance: distance
       }
 
-      this.hits.push(hit);
-      this.loadMap();
+      let currentHits = this.hits.value;
+      currentHits.push(hit);
+
+      this.hits.next(currentHits);
+      // this.loadMap();
+    })
+    this.geoFire.query({
+      center: coords,
+      radius: radius
+    }).on('key_moved', (key, location, distance)=>{
+      let hit = {
+        location: location,
+        distance: distance
+      }
+
+      let currentHits = this.hits.value;
+      currentHits.push(hit);
+
+      this.hits.next(currentHits);
+      // this.loadMap();
     })
   }
 
-  ionViewDidLoad() {
-    // this.db.object('test').update({
-    //   test: "a test"
-    // })
+  addNewLocation(){
+    this.setLocation("9hfDfQDKDbdhnOB6FAYcDy4wy0f2", [40.68792771802359,-74.47837829589844]);
   }
 
   loadMap() {
@@ -94,42 +119,55 @@ export class HomePage {
 
     this.map = this.googleMaps.create(this.mapElement, mapOptions);
 
-    // Wait the MAP_READY before using any methods.
-    this.map.one(GoogleMapsEvent.MAP_READY)
-      .then(() => {
-        console.log('Map is ready!');
-
-        // Now you can use all methods safely.
-
-        // this.map.addMarker({
-        //   title: 'Ionic',
-        //   icon: 'blue',
-        //   animation: 'DROP',
-        //   position: {
-        //     lat: this.center[0],
-        //     lng: this.center[1]
-        //   }
-        // })
-
-        this.hits.forEach(hit=>{
-          this.map.addMarker({
-            title: 'Ionic',
-            icon: 'blue',
-            animation: 'DROP',
-            position: {
-              lat: hit.location[0],
-              lng: hit.location[1]
-            }
+    
+      this.hits.subscribe(hits=>{
+        this.map.clear().then(_=>{
+          hits.forEach(hit=>{
+            this.map.addMarker({
+              title: 'Ionic',
+              icon: 'blue',
+              // animation: 'DROP',
+              position: {
+                lat: hit.location[0],
+                lng: hit.location[1]
+              }
+            })
+              .then(marker => {
+                marker.on(GoogleMapsEvent.MARKER_CLICK)
+                  .subscribe(() => {
+                    alert('clicked');
+                  });
+              });
           })
-            .then(marker => {
-              marker.on(GoogleMapsEvent.MARKER_CLICK)
-                .subscribe(() => {
-                  alert('clicked');
-                });
-            });
-        })
+        });
+        
+      })
+    
+    // Wait the MAP_READY before using any methods.
+    // this.map.one(GoogleMapsEvent.MAP_READY)
+    //   .then(() => {
+    //     console.log('Map is ready!');
+    //     this.hits.subscribe(hits=>{
+    //       hits.forEach(hit=>{
+    //         this.map.addMarker({
+    //           title: 'Ionic',
+    //           icon: 'blue',
+    //           animation: 'DROP',
+    //           position: {
+    //             lat: hit.location[0],
+    //             lng: hit.location[1]
+    //           }
+    //         })
+    //           .then(marker => {
+    //             marker.on(GoogleMapsEvent.MARKER_CLICK)
+    //               .subscribe(() => {
+    //                 alert('clicked');
+    //               });
+    //           });
+    //       })
+    //     })
 
-      });
+    //   });
   }
 
 }
